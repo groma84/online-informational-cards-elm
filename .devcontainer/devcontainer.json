@@ -1,13 +1,15 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.155.1/containers/elm
 {
-	"name": "Elm (Community) - modified by me",
+	"name": "Elm (Community) - modified by groma84",
 	"dockerFile": "Dockerfile",
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": { 
 		"terminal.integrated.shell.linux": "/bin/bash"
 	},
+
+	"mounts": ["source=${localWorkspaceFolder}/.cache,target=/cache,type=bind,consistency=delegated"],
 	
 	/*
 	"build": { 
