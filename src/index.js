@@ -5,6 +5,7 @@ import cardsJson from "./cards.json";
 
 Elm.Main.init({
   node: document.getElementById("root"),
+  flags: cardsJson
 });
 
 // If you want your app to work offline and load faster, you can change

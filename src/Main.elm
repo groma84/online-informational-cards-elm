@@ -3,20 +3,61 @@ module Main exposing (..)
 import Browser
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
+import Json.Decode exposing (Decoder, decodeValue, field, list, map4, maybe, string)
+
+
+decodeCard : Decoder Card
+decodeCard =
+    map4
+        Card
+        (field "cardId" string)
+        (maybe (field "title" string))
+        (field "text" string)
+        (maybe (field "additionalText" string))
+
+
+decodeDeck : Decoder Deck
+decodeDeck =
+    map4
+        Deck
+        (field "deckId" string)
+        (field "name" string)
+        (maybe (field "source" string))
+        (field "cards" (list decodeCard))
 
 
 
 ---- MODEL ----
 
 
-type alias Model =
-    { counter : Int
+type alias Card =
+    { cardId : String
+    , title : Maybe String
+    , text : String
+    , additionalText : Maybe String
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { counter = 42 }, Cmd.none )
+type alias Deck =
+    { deckId : String
+    , name : String
+    , source : Maybe String
+    , cards : List Card
+    }
+
+
+type alias Model =
+    { decks : Result Json.Decode.Error (List Deck)
+    }
+
+
+init : Json.Decode.Value -> ( Model, Cmd Msg )
+init flags =
+    let
+        decks =
+            decodeValue (list decodeDeck) flags
+    in
+    ( { decks = decks }, Cmd.none )
 
 
 
@@ -38,9 +79,17 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
+    let
+        x =
+            case model.decks of
+                Ok d ->
+                    text "yay"
+
+                Err e ->
+                    text (Json.Decode.errorToString e)
+    in
     div []
-        [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
+        [ x
         ]
 
 
@@ -48,11 +97,11 @@ view model =
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program Json.Decode.Value Model Msg
 main =
     Browser.element
         { view = view
-        , init = \_ -> init
+        , init = init
         , update = update
         , subscriptions = always Sub.none
         }
