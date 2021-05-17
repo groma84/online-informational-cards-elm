@@ -77,7 +77,7 @@ update msg model =
 ---- VIEW ----
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
     let
         x =
@@ -88,9 +88,13 @@ view model =
                 Err e ->
                     text (Json.Decode.errorToString e)
     in
-    div []
-        [ x
+    { title = "Online Informational Cards"
+    , body =
+        [ div []
+            [ x
+            ]
         ]
+    }
 
 
 
@@ -99,7 +103,7 @@ view model =
 
 main : Program Json.Decode.Value Model Msg
 main =
-    Browser.element
+    Browser.document
         { view = view
         , init = init
         , update = update
