@@ -86,7 +86,7 @@ view model =
                     text "yay"
 
                 Err e ->
-                    text (Json.Decode.errorToString e)
+                    text <| "ERROR!: " ++ Json.Decode.errorToString e
     in
     { title = "Online Informational Cards"
     , body =
