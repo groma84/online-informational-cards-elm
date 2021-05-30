@@ -28,6 +28,7 @@ ENV HOME /cache
 # Install elm and additional programs
 RUN export DEBIAN_FRONTEND=noninteractive \
     && sudo -u ${USERNAME} npm install --global \
+    npm \
     elm@${ELM_VERSION} \
     elm-test@${ELM_TEST_VERSION} \
     elm-format@${ELM_FORMAT_VERSION} \

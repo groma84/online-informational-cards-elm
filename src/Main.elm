@@ -3,14 +3,13 @@ module Main exposing (..)
 import Browser
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
-import Json.Decode exposing (Decoder, decodeValue, field, list, map4, maybe, string)
+import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 
 
 decodeCard : Decoder Card
 decodeCard =
-    map4
+    map3
         Card
-        (field "cardId" string)
         (maybe (field "title" string))
         (field "text" string)
         (maybe (field "additionalText" string))
