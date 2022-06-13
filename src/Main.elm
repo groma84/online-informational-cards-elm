@@ -1,11 +1,11 @@
 module Main exposing (..)
 
 import Browser exposing (UrlRequest)
+import Browser.Navigation as Nav
 import Html exposing (Html, a, div, h1, img, li, ol, text)
 import Html.Attributes exposing (href, src)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import Url
-import Browser.Navigation as Nav
 import Url.Parser as UP exposing ((</>))
 
 
@@ -30,10 +30,13 @@ decodeDeck =
 
 
 ---- MODEL ----
-type Route 
+
+
+type Route
     = NotFound
     | Homepage
     | DeckDetails String
+
 
 type alias Card =
     { title : Maybe String
@@ -60,9 +63,10 @@ type alias Model =
 parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
-    [
-        UP.map DeckDetails (UP.s deckPrefix </> UP.string)
-    ]
+        [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
+        , UP.map Homepage UP.top
+        ]
+
 
 init : Json.Decode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
@@ -100,7 +104,10 @@ update msg model =
         OnUrlChange url ->
             let
                 parsedRoute : Route
-                parsedRoute = Maybe.withDefault NotFound (UP.parse parser url)
+                parsedRoute =
+                    Maybe.withDefault NotFound (UP.parse parser url)
+                
+                
             in
             ( { model | route = parsedRoute }
             , Cmd.none
@@ -110,20 +117,43 @@ update msg model =
 
 ---- VIEW ----
 
-deckPrefix : String
-deckPrefix = "deck"
 
-view : Model -> Browser.Document Msg
-view model =
+routeToTitle : Route -> String
+routeToTitle route =
     let
-        deckLink : String -> String
-        deckLink slug = deckPrefix ++ "/" ++ slug
+        routeTitle =
+            case route of
+                NotFound ->
+                    "404 - Not Found"
 
+                Homepage ->
+                    "Homepage"
+
+                -- TODO: get and add deckname
+                DeckDetails _ ->
+                    "Deck details"
+    in
+    routeTitle ++ " @ OInC"
+
+
+deckPrefix : String
+deckPrefix =
+    "deck"
+
+
+deckLink : String -> String
+deckLink slug =
+    deckPrefix ++ "/" ++ slug
+
+
+homepage : Model -> Html Msg
+homepage model =
+    let
         oneDeck : Deck -> Html Msg
         oneDeck d =
             li [] [ a [ href (deckLink d.slug) ] [ text d.slug ] ]
 
-        x =
+        deckList =
             case model.decks of
                 Ok decks ->
                     ol [] (List.map oneDeck decks)
@@ -131,11 +161,29 @@ view model =
                 Err e ->
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
     in
-    { title = "Online Informational Cards"
+    div []
+        [ deckList
+        ]
+
+
+deckDetailsPage : String -> Html Msg
+deckDetailsPage slug =
+    div [] [ text slug ]
+
+
+view : Model -> Browser.Document Msg
+view model =
+    { title = routeToTitle model.route
     , body =
-        [ div []
-            [ x
-            ]
+        [ case model.route of
+            NotFound ->
+                text "page not found"
+
+            Homepage ->
+                homepage model
+
+            DeckDetails slug ->
+                deckDetailsPage slug
         ]
     }
 
