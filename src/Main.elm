@@ -6,7 +6,7 @@ import Html.Attributes exposing (href, src)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import Url
 import Browser.Navigation as Nav
-
+import Url.Parser as UP exposing ((</>))
 
 
 decodeCard : Decoder Card
@@ -30,7 +30,10 @@ decodeDeck =
 
 
 ---- MODEL ----
-
+type Route 
+    = NotFound
+    | Homepage
+    | DeckDetails String
 
 type alias Card =
     { title : Maybe String
@@ -50,9 +53,16 @@ type alias Deck =
 type alias Model =
     { decks : Result Json.Decode.Error (List Deck)
     , key : Nav.Key
-    , url : Url.Url
+    , route : Route
     }
 
+
+parser : UP.Parser (Route -> a) a
+parser =
+    UP.oneOf
+    [
+        UP.map DeckDetails (UP.s deckPrefix </> UP.string)
+    ]
 
 init : Json.Decode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
@@ -60,7 +70,7 @@ init flags url key =
         decks =
             decodeValue (list decodeDeck) flags
     in
-    ( { decks = decks, url = url, key = key }, Cmd.none )
+    ( { decks = decks, route = Homepage, key = key }, Cmd.none )
 
 
 
@@ -88,7 +98,11 @@ update msg model =
                     ( model, Nav.load href )
 
         OnUrlChange url ->
-            ( { model | url = url }
+            let
+                parsedRoute : Route
+                parsedRoute = Maybe.withDefault NotFound (UP.parse parser url)
+            in
+            ( { model | route = parsedRoute }
             , Cmd.none
             )
 
@@ -96,13 +110,18 @@ update msg model =
 
 ---- VIEW ----
 
+deckPrefix : String
+deckPrefix = "deck"
 
 view : Model -> Browser.Document Msg
 view model =
     let
+        deckLink : String -> String
+        deckLink slug = deckPrefix ++ "/" ++ slug
+
         oneDeck : Deck -> Html Msg
         oneDeck d =
-            li [] [ a [ href d.slug ] [ text d.slug ] ]
+            li [] [ a [ href (deckLink d.slug) ] [ text d.slug ] ]
 
         x =
             case model.decks of
