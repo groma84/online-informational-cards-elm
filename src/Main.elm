@@ -1,9 +1,11 @@
 module Main exposing (..)
 
-import Browser
-import Html exposing (Html, div, h1, img, text, a, li, ol)
-import Html.Attributes exposing (src, href)
+import Browser exposing (UrlRequest)
+import Html exposing (Html, a, div, h1, img, li, ol, text)
+import Html.Attributes exposing (href, src)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
+import Url
+import Browser.Navigation as Nav
 
 
 
@@ -47,16 +49,18 @@ type alias Deck =
 
 type alias Model =
     { decks : Result Json.Decode.Error (List Deck)
+    , key : Nav.Key
+    , url : Url.Url
     }
 
 
-init : Json.Decode.Value -> ( Model, Cmd Msg )
-init flags =
+init : Json.Decode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
     let
         decks =
             decodeValue (list decodeDeck) flags
     in
-    ( { decks = decks }, Cmd.none )
+    ( { decks = decks, url = url, key = key }, Cmd.none )
 
 
 
@@ -65,11 +69,28 @@ init flags =
 
 type Msg
     = NoOp
+    | OnUrlRequest UrlRequest
+    | OnUrlChange Url.Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        OnUrlRequest urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Nav.load href )
+
+        OnUrlChange url ->
+            ( { model | url = url }
+            , Cmd.none
+            )
 
 
 
@@ -87,7 +108,6 @@ view model =
             case model.decks of
                 Ok decks ->
                     ol [] (List.map oneDeck decks)
-                        
 
                 Err e ->
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
@@ -107,9 +127,11 @@ view model =
 
 main : Program Json.Decode.Value Model Msg
 main =
-    Browser.document
+    Browser.application
         { view = view
         , init = init
         , update = update
         , subscriptions = always Sub.none
+        , onUrlRequest = OnUrlRequest
+        , onUrlChange = OnUrlChange
         }
