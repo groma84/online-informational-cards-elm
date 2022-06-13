@@ -5,6 +5,7 @@ import Browser.Navigation as Nav
 import Html exposing (Html, a, div, h1, img, li, ol, text)
 import Html.Attributes exposing (href, src)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
+import List.Extra
 import Url
 import Url.Parser as UP exposing ((</>))
 
@@ -34,8 +35,14 @@ decodeDeck =
 
 type Route
     = NotFound
-    | Homepage
+    | Home
     | DeckDetails String
+
+
+type Page
+    = NotFoundPage
+    | Homepage
+    | DeckDetailsPage Deck
 
 
 type alias Card =
@@ -56,7 +63,7 @@ type alias Deck =
 type alias Model =
     { decks : Result Json.Decode.Error (List Deck)
     , key : Nav.Key
-    , route : Route
+    , page : Page
     }
 
 
@@ -64,7 +71,7 @@ parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
         [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
-        , UP.map Homepage UP.top
+        , UP.map Home UP.top
         ]
 
 
@@ -74,7 +81,7 @@ init flags url key =
         decks =
             decodeValue (list decodeDeck) flags
     in
-    ( { decks = decks, route = Homepage, key = key }, Cmd.none )
+    ( { decks = decks, page = urlToPage decks url, key = key }, Cmd.none )
 
 
 
@@ -85,6 +92,36 @@ type Msg
     = NoOp
     | OnUrlRequest UrlRequest
     | OnUrlChange Url.Url
+
+
+urlToPage : Result Json.Decode.Error (List Deck) -> Url.Url -> Page
+urlToPage decks url =
+    let
+        parsedRoute : Route
+        parsedRoute =
+            Maybe.withDefault NotFound (UP.parse parser url)
+
+        page =
+            case parsedRoute of
+                NotFound ->
+                    NotFoundPage
+
+                Home ->
+                    Homepage
+
+                DeckDetails slug ->
+                    Result.withDefault NotFoundPage
+                        (Result.map
+                            (\ds ->
+                                ds
+                                    |> List.Extra.find (\d -> d.slug == slug)
+                                    |> Maybe.map DeckDetailsPage
+                                    |> Maybe.withDefault NotFoundPage
+                            )
+                            decks
+                        )
+    in
+    page
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -102,14 +139,7 @@ update msg model =
                     ( model, Nav.load href )
 
         OnUrlChange url ->
-            let
-                parsedRoute : Route
-                parsedRoute =
-                    Maybe.withDefault NotFound (UP.parse parser url)
-                
-                
-            in
-            ( { model | route = parsedRoute }
+            ( { model | page = urlToPage model.decks url }
             , Cmd.none
             )
 
@@ -118,22 +148,21 @@ update msg model =
 ---- VIEW ----
 
 
-routeToTitle : Route -> String
-routeToTitle route =
+pageTitle : Page -> String
+pageTitle page =
     let
-        routeTitle =
-            case route of
-                NotFound ->
+        title =
+            case page of
+                NotFoundPage ->
                     "404 - Not Found"
 
                 Homepage ->
                     "Homepage"
 
-                -- TODO: get and add deckname
-                DeckDetails _ ->
-                    "Deck details"
+                DeckDetailsPage deck ->
+                    deck.name
     in
-    routeTitle ++ " @ OInC"
+    title ++ " @ OInC"
 
 
 deckPrefix : String
@@ -166,24 +195,24 @@ homepage model =
         ]
 
 
-deckDetailsPage : String -> Html Msg
-deckDetailsPage slug =
-    div [] [ text slug ]
+deckDetailsPage : Deck -> Html Msg
+deckDetailsPage deck =
+    div [] [ text deck.slug ]
 
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = routeToTitle model.route
+    { title = pageTitle model.page
     , body =
-        [ case model.route of
-            NotFound ->
+        [ case model.page of
+            NotFoundPage ->
                 text "page not found"
 
             Homepage ->
                 homepage model
 
-            DeckDetails slug ->
-                deckDetailsPage slug
+            DeckDetailsPage deck ->
+                deckDetailsPage deck
         ]
     }
 
