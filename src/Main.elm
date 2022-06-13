@@ -37,6 +37,7 @@ type Route
     = NotFound
     | Home
     | DeckDetails String
+    | CardDetails String Int
 
 
 type Page
@@ -71,6 +72,7 @@ parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
         [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
+        , UP.map CardDetails (UP.s deckPrefix </> UP.string </> UP.s cardPrefix </> UP.int)
         , UP.map Home UP.top
         ]
 
@@ -169,11 +171,15 @@ deckPrefix : String
 deckPrefix =
     "deck"
 
+cardPrefix : String
+cardPrefix = "card"
 
 deckLink : String -> String
 deckLink slug =
     deckPrefix ++ "/" ++ slug
 
+cardLink deckSlug index =
+    deckSlug ++ "/" ++ cardPrefix ++ "/" ++ String.fromInt index
 
 homepage : Model -> Html Msg
 homepage model =
@@ -197,7 +203,14 @@ homepage model =
 
 deckDetailsPage : Deck -> Html Msg
 deckDetailsPage deck =
-    div [] [ text deck.slug ]
+    let
+        oneCard : Int -> Card -> Html Msg
+        -- TODO: shorten card.text for displaying if card.title is not available 
+        oneCard index card = li [] [ a [href (cardLink deck.slug index)] [text (Maybe.withDefault card.text card.title)]]
+        
+    in
+    
+    div [] [ ol [] (List.indexedMap oneCard deck.cards) ]
 
 
 view : Model -> Browser.Document Msg
