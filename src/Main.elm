@@ -2,8 +2,8 @@ module Main exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation as Nav
-import Html exposing (Html, a, div, h1, img, li, ol, text)
-import Html.Attributes exposing (href, src)
+import Html exposing (Html, a, div, h1, header, img, li, main_, ol, span, text)
+import Html.Attributes exposing (class, href, src)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import List.Extra
 import Url
@@ -101,10 +101,13 @@ urlToPage : Result Json.Decode.Error (List Deck) -> Url.Url -> Page
 urlToPage decks url =
     let
         findDeck : String -> Maybe Deck
-        findDeck slug  =
+        findDeck slug =
             case decks of
-                Err _ -> Nothing
-                Ok deckList -> List.Extra.find (\d -> d.slug == slug) deckList
+                Err _ ->
+                    Nothing
+
+                Ok deckList ->
+                    List.Extra.find (\d -> d.slug == slug) deckList
 
         parsedRoute : Route
         parsedRoute =
@@ -131,17 +134,18 @@ urlToPage decks url =
 
                 CardDetails deckId cardNumber ->
                     let
-                        findCard : Deck -> Maybe Card 
+                        findCard : Deck -> Maybe Card
                         findCard deck =
                             List.Extra.getAt cardNumber deck.cards
 
-                        foundDeck = findDeck deckId
-                        foundCard = Maybe.andThen findCard foundDeck
-                    in
-                        Maybe.map CardDetailsPage foundCard
-                        |> Maybe.withDefault NotFoundPage
-                    
+                        foundDeck =
+                            findDeck deckId
 
+                        foundCard =
+                            Maybe.andThen findCard foundDeck
+                    in
+                    Maybe.map CardDetailsPage foundCard
+                        |> Maybe.withDefault NotFoundPage
     in
     page
 
@@ -183,7 +187,7 @@ pageTitle page =
 
                 DeckDetailsPage deck ->
                     deck.name
-                
+
                 CardDetailsPage card ->
                     Maybe.withDefault "" card.title
     in
@@ -194,15 +198,36 @@ deckPrefix : String
 deckPrefix =
     "deck"
 
+
 cardPrefix : String
-cardPrefix = "card"
+cardPrefix =
+    "card"
+
 
 deckLink : String -> String
 deckLink slug =
     deckPrefix ++ "/" ++ slug
 
+
 cardLink deckSlug index =
     deckSlug ++ "/" ++ cardPrefix ++ "/" ++ String.fromInt index
+
+pageChrome : Html Msg -> Html Msg
+pageChrome content =
+    div
+        [ class "container"
+        , class "container-md"
+        , class "paper"
+        ]
+        [ header []
+            [ span [] [ text "🐷" ]
+            , span [] [ text "Online Informational Cards" ]
+            ]
+        , main_ []
+            [ content
+            ]
+        ]
+
 
 homepage : Model -> Html Msg
 homepage model =
@@ -219,27 +244,26 @@ homepage model =
                 Err e ->
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
     in
-    div []
-        [ deckList
-        ]
+        pageChrome deckList
+    
 
 
 deckDetailsPage : Deck -> Html Msg
 deckDetailsPage deck =
     let
         oneCard : Int -> Card -> Html Msg
-        -- TODO: shorten card.text for displaying if card.title is not available 
-        oneCard index card = li [] [ a [href (cardLink deck.slug index)] [text (Maybe.withDefault card.text card.title)]]
-        
+        -- TODO: shorten card.text for displaying if card.title is not available
+        oneCard index card =
+            li [] [ a [ href (cardLink deck.slug index) ] [ text (Maybe.withDefault card.text card.title) ] ]
     in
-    
     div [] [ ol [] (List.indexedMap oneCard deck.cards) ]
 
 
 cardDetailsPage : Card -> Html Msg
 cardDetailsPage card =
     -- TODO: everything
-    div [] [text card.text]
+    div [] [ text card.text ]
+
 
 view : Model -> Browser.Document Msg
 view model =

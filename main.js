@@ -1,3 +1,4 @@
+import "./paper.min.css";
 import "./style.css";
 import cards from "./cards.json";
 import { Elm } from "./src/Main.elm";
