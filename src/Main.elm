@@ -44,6 +44,7 @@ type Page
     = NotFoundPage
     | Homepage
     | DeckDetailsPage Deck
+    | CardDetailsPage Card
 
 
 type alias Card =
@@ -99,6 +100,12 @@ type Msg
 urlToPage : Result Json.Decode.Error (List Deck) -> Url.Url -> Page
 urlToPage decks url =
     let
+        findDeck : String -> Maybe Deck
+        findDeck slug  =
+            case decks of
+                Err _ -> Nothing
+                Ok deckList -> List.Extra.find (\d -> d.slug == slug) deckList
+
         parsedRoute : Route
         parsedRoute =
             Maybe.withDefault NotFound (UP.parse parser url)
@@ -115,13 +122,26 @@ urlToPage decks url =
                     Result.withDefault NotFoundPage
                         (Result.map
                             (\ds ->
-                                ds
-                                    |> List.Extra.find (\d -> d.slug == slug)
+                                findDeck slug
                                     |> Maybe.map DeckDetailsPage
                                     |> Maybe.withDefault NotFoundPage
                             )
                             decks
                         )
+
+                CardDetails deckId cardNumber ->
+                    let
+                        findCard : Deck -> Maybe Card 
+                        findCard deck =
+                            List.Extra.getAt cardNumber deck.cards
+
+                        foundDeck = findDeck deckId
+                        foundCard = Maybe.andThen findCard foundDeck
+                    in
+                        Maybe.map CardDetailsPage foundCard
+                        |> Maybe.withDefault NotFoundPage
+                    
+
     in
     page
 
@@ -163,6 +183,9 @@ pageTitle page =
 
                 DeckDetailsPage deck ->
                     deck.name
+                
+                CardDetailsPage card ->
+                    Maybe.withDefault "" card.title
     in
     title ++ " @ OInC"
 
@@ -213,6 +236,11 @@ deckDetailsPage deck =
     div [] [ ol [] (List.indexedMap oneCard deck.cards) ]
 
 
+cardDetailsPage : Card -> Html Msg
+cardDetailsPage card =
+    -- TODO: everything
+    div [] [text card.text]
+
 view : Model -> Browser.Document Msg
 view model =
     { title = pageTitle model.page
@@ -226,6 +254,9 @@ view model =
 
             DeckDetailsPage deck ->
                 deckDetailsPage deck
+
+            CardDetailsPage card ->
+                cardDetailsPage card
         ]
     }
 
