@@ -2,8 +2,9 @@ module Main exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation as Nav
-import Html exposing (Html, a, div, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
-import Html.Attributes exposing (class, href, src)
+import Html exposing (Html, a, button, div, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
+import Html.Attributes exposing (class, href, id, src, type_)
+import Html.Events exposing (onClick)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import List.Extra
 import Url
@@ -37,14 +38,12 @@ type Route
     = NotFound
     | Home
     | DeckDetails String
-    | CardDetails String Int
 
 
 type Page
     = NotFoundPage
     | Homepage
     | DeckDetailsPage Deck
-    | CardDetailsPage Card
 
 
 type alias Card =
@@ -73,7 +72,6 @@ parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
         [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
-        , UP.map CardDetails (UP.s deckPrefix </> UP.string </> UP.s cardPrefix </> UP.int)
         , UP.map Home UP.top
         ]
 
@@ -95,6 +93,7 @@ type Msg
     = NoOp
     | OnUrlRequest UrlRequest
     | OnUrlChange Url.Url
+    | ScrollToRandomCard
 
 
 urlToPage : Result Json.Decode.Error (List Deck) -> Url.Url -> Page
@@ -131,21 +130,6 @@ urlToPage decks url =
                             )
                             decks
                         )
-
-                CardDetails deckId cardNumber ->
-                    let
-                        findCard : Deck -> Maybe Card
-                        findCard deck =
-                            List.Extra.getAt cardNumber deck.cards
-
-                        foundDeck =
-                            findDeck deckId
-
-                        foundCard =
-                            Maybe.andThen findCard foundDeck
-                    in
-                    Maybe.map CardDetailsPage foundCard
-                        |> Maybe.withDefault NotFoundPage
     in
     page
 
@@ -188,8 +172,6 @@ pageTitle page =
                 DeckDetailsPage deck ->
                     deck.name
 
-                CardDetailsPage card ->
-                    Maybe.withDefault "" card.title
     in
     title ++ " @ OInC"
 
@@ -229,7 +211,7 @@ pageChrome content =
             , span [ class "header-letter" ] [ text "C" ]
             , span [ class "header-text" ] [ text "ards" ]
             ]
-        , main_ []
+        , main_ [ class "with-margins" ]
             [ content
             ]
         ]
@@ -278,19 +260,32 @@ homepage model =
 deckDetailsPage : Deck -> Html Msg
 deckDetailsPage deck =
     let
-        -- TODO: Styling
         -- TODO: go to random card of deck
         oneCard : Int -> Card -> Html Msg
         oneCard index card =
-            li [] [ a [ href (cardLink deck.slug index) ] [ text (Maybe.withDefault card.text card.title) ] ]
+            let
+                cardId =
+                    deck.slug ++ "--" ++ String.fromInt index
+            in
+            li [ class "card-in-cardlist", id cardId ]
+                [ div [ class "card" ]
+                    [ h4 [ class "card-title", class "deck-list-card-title" ] [ text (Maybe.withDefault "" card.title) ]
+                    , div [ class "deck-list-card-content" ]
+                        [ p [ class "card-text" ] [ text card.text ]
+                        , a [ class "card-link", href (cardLink deck.slug index) ] [ text "Go to card" ]
+                        ]
+                    ]
+                ]
     in
-    div [] [ ol [] (List.indexedMap oneCard deck.cards) ]
-
-
-cardDetailsPage : Card -> Html Msg
-cardDetailsPage card =
-    -- TODO: everything
-    div [] [ text card.text ]
+    pageChrome
+        (div []
+            [ div [ class "flex", class "cards-page--title-container" ]
+                [ h3 [ class "deck-title-on-cards-page" ] [ text deck.name ]
+                , button [ type_ "button", onClick ScrollToRandomCard ] [ text "Scroll to random card" ]
+                ]
+            , ol [ class "deck-list" ] (List.indexedMap oneCard deck.cards)
+            ]
+        )
 
 
 view : Model -> Browser.Document Msg
@@ -308,8 +303,6 @@ view model =
             DeckDetailsPage deck ->
                 deckDetailsPage deck
 
-            CardDetailsPage card ->
-                cardDetailsPage card
         ]
     }
 

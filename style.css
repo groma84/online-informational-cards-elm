@@ -5,6 +5,11 @@
   --color-okay: #5a7c6c;
 }
 
+ol {
+  margin: 0;
+  padding: 0;
+}
+
 header {
   display: flex;
   justify-content: center;
@@ -25,9 +30,19 @@ header .header-text {
   margin-right: 1.0rem;
 }
 
+main.with-margins {
+  margin-left: 2rem;
+  margin-right: 2rem;
+}
+
+.flex {
+  display: flex;
+}
+
 .deck-list {
   display: grid;
   grid-template-columns: 2fr 2fr;
+  gap: 2rem;
   list-style: none;
 }
 
@@ -43,6 +58,11 @@ header .header-text {
   margin: 0 1rem 1rem 2rem;
 }
 
-.deck-in-decklist {
-  width: 20vw;
+.cards-page--title-container {
+  margin-bottom: 1rem;
+  justify-content: space-between;
+}
+
+.deck-title-on-cards-page {
+  display: inline;
 }
