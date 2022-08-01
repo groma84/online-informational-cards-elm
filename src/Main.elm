@@ -1,14 +1,17 @@
 module Main exposing (..)
 
 import Browser exposing (UrlRequest)
+import Browser.Dom
 import Browser.Navigation as Nav
 import Html exposing (Html, a, button, div, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
 import Html.Attributes exposing (class, href, id, src, type_)
 import Html.Events exposing (onClick)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import List.Extra
+import Random
 import Url
 import Url.Parser as UP exposing ((</>))
+import Task
 
 
 decodeCard : Decoder Card
@@ -93,7 +96,8 @@ type Msg
     = NoOp
     | OnUrlRequest UrlRequest
     | OnUrlChange Url.Url
-    | ScrollToRandomCard
+    | ScrollToRandomCard String Int
+    | RandomCardIndex String Int
 
 
 urlToPage : Result Json.Decode.Error (List Deck) -> Url.Url -> Page
@@ -134,6 +138,18 @@ urlToPage decks url =
     page
 
 
+jumpToCard : String -> Cmd Msg
+jumpToCard id =
+    Browser.Dom.getViewportOf id
+        |> Task.andThen (\info -> Browser.Dom.setViewportOf id 0 info.scene.height)
+        |> Task.attempt (\_ -> NoOp)
+
+
+buildCardId : String -> Int -> String
+buildCardId deckSlug cardIndex =
+    deckSlug ++ "--" ++ String.fromInt cardIndex
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -153,6 +169,20 @@ update msg model =
             , Cmd.none
             )
 
+        ScrollToRandomCard deckSlug cardAmount ->
+            let
+                command =
+                    Random.generate (RandomCardIndex deckSlug) <| Random.int 0 cardAmount
+            in
+            ( model, command )
+
+        RandomCardIndex deckSlug cardIndex ->
+            let
+                command =
+                    jumpToCard (buildCardId deckSlug cardIndex)
+            in
+            ( model, command )
+
 
 
 ---- VIEW ----
@@ -171,7 +201,6 @@ pageTitle page =
 
                 DeckDetailsPage deck ->
                     deck.name
-
     in
     title ++ " @ OInC"
 
@@ -265,7 +294,7 @@ deckDetailsPage deck =
         oneCard index card =
             let
                 cardId =
-                    deck.slug ++ "--" ++ String.fromInt index
+                    buildCardId deck.slug index
             in
             li [ class "card-in-cardlist", id cardId ]
                 [ div [ class "card" ]
@@ -281,7 +310,7 @@ deckDetailsPage deck =
         (div []
             [ div [ class "flex", class "cards-page--title-container" ]
                 [ h3 [ class "deck-title-on-cards-page" ] [ text deck.name ]
-                , button [ type_ "button", onClick ScrollToRandomCard ] [ text "Scroll to random card" ]
+                , button [ type_ "button", onClick (ScrollToRandomCard deck.slug (List.length deck.cards)) ] [ text "Scroll to random card" ]
                 ]
             , ol [ class "deck-list" ] (List.indexedMap oneCard deck.cards)
             ]
@@ -302,7 +331,6 @@ view model =
 
             DeckDetailsPage deck ->
                 deckDetailsPage deck
-
         ]
     }
 
