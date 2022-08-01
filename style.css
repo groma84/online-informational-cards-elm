@@ -1,13 +1,34 @@
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin: 0 auto;
-  margin-top: 60px;
+:root {
+  --color-action: #F476AC;
+  --color-accent: #d8b193;
+  --color-darkened: #be9079;
+  --color-okay: #5a7c6c;
 }
 
-a {
-  color: #60b5cc;
+header {
+  display: flex;
+  justify-content: center;
+  font-size: 3.5rem;
+  margin-bottom: 2rem;
+}
+
+header .header-icon {
+  margin-right: 1rem;
+}
+
+header .header-letter {
+  color: var(--color-action);
+}
+
+header .header-text {
+  color: var(--color-darkened);
+  margin-right: 1.0rem;
+}
+
+.deck-list {
+  display: grid;
+}
+
+.deck-in-decklist {
+  
 }

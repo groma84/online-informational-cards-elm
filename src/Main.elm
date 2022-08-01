@@ -220,8 +220,13 @@ pageChrome content =
         , class "paper"
         ]
         [ header []
-            [ span [] [ text "🐷" ]
-            , span [] [ text "Online Informational Cards" ]
+            [ span [class "header-icon"] [ text "🐷" ]
+            , span [class "header-letter"] [ text "O" ]
+            , span [class "header-text"] [ text "nline" ]
+            , span [class "header-letter"] [ text "In" ]
+            , span [class "header-text"] [ text "formational" ]
+            , span [class "header-letter"] [ text "C" ]
+            , span [class "header-text"] [ text "ards" ]
             ]
         , main_ []
             [ content
@@ -234,12 +239,15 @@ homepage model =
     let
         oneDeck : Deck -> Html Msg
         oneDeck d =
-            li [] [ a [ href (deckLink d.slug) ] [ text d.slug ] ]
+            -- TODO: Grid, and title/text formatting within each grid entry
+            -- TODO: shorten card.text for displaying if card.title is not available
+            -- TODO:  Also: Source if applicable, and number of cards count
+            li [class "deck-in-decklist"] [ a [ href (deckLink d.slug) ] [ text d.slug ] ]
 
         deckList =
             case model.decks of
                 Ok decks ->
-                    ol [] (List.map oneDeck decks)
+                    ol [class "deck-list"] (List.map oneDeck decks)
 
                 Err e ->
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
@@ -251,8 +259,9 @@ homepage model =
 deckDetailsPage : Deck -> Html Msg
 deckDetailsPage deck =
     let
+        -- TODO: Styling
+        -- TODO: go to random card of deck
         oneCard : Int -> Card -> Html Msg
-        -- TODO: shorten card.text for displaying if card.title is not available
         oneCard index card =
             li [] [ a [ href (cardLink deck.slug index) ] [ text (Maybe.withDefault card.text card.title) ] ]
     in
@@ -271,6 +280,7 @@ view model =
     , body =
         [ case model.page of
             NotFoundPage ->
+                -- TODO: Add Link to homepage and some styling/image
                 text "page not found"
 
             Homepage ->
