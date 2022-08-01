@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation as Nav
-import Html exposing (Html, a, div, h1, header, img, li, main_, ol, span, text)
+import Html exposing (Html, a, div, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
 import Html.Attributes exposing (class, href, src)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import List.Extra
@@ -212,6 +212,7 @@ deckLink slug =
 cardLink deckSlug index =
     deckSlug ++ "/" ++ cardPrefix ++ "/" ++ String.fromInt index
 
+
 pageChrome : Html Msg -> Html Msg
 pageChrome content =
     div
@@ -220,13 +221,13 @@ pageChrome content =
         , class "paper"
         ]
         [ header []
-            [ span [class "header-icon"] [ text "🐷" ]
-            , span [class "header-letter"] [ text "O" ]
-            , span [class "header-text"] [ text "nline" ]
-            , span [class "header-letter"] [ text "In" ]
-            , span [class "header-text"] [ text "formational" ]
-            , span [class "header-letter"] [ text "C" ]
-            , span [class "header-text"] [ text "ards" ]
+            [ span [ class "header-icon" ] [ text "🐷" ]
+            , span [ class "header-letter" ] [ text "O" ]
+            , span [ class "header-text" ] [ text "nline" ]
+            , span [ class "header-letter" ] [ text "In" ]
+            , span [ class "header-text" ] [ text "formational" ]
+            , span [ class "header-letter" ] [ text "C" ]
+            , span [ class "header-text" ] [ text "ards" ]
             ]
         , main_ []
             [ content
@@ -234,26 +235,44 @@ pageChrome content =
         ]
 
 
+oneDeckInDeckList : Deck -> Html Msg
+oneDeckInDeckList d =
+    let
+        subtitle =
+            case d.source of
+                Nothing ->
+                    text ""
+
+                Just s ->
+                    h5 [ class "card-subtitle", class "deck-list-card-subtitle" ] [ text s ]
+
+        cardCountText =
+            List.length d.cards |> String.fromInt
+    in
+    li [ class "deck-in-decklist" ]
+        [ div [ class "card" ]
+            [ h4 [ class "card-title", class "deck-list-card-title" ] [ text d.name ]
+            , subtitle
+            , div [ class "deck-list-card-content" ]
+                [ p [ class "card-text" ] [ text (cardCountText ++ " cards") ]
+                , a [ class "card-link", href (deckLink d.slug) ] [ text "Go to cards of deck" ]
+                ]
+            ]
+        ]
+
+
 homepage : Model -> Html Msg
 homepage model =
     let
-        oneDeck : Deck -> Html Msg
-        oneDeck d =
-            -- TODO: Grid, and title/text formatting within each grid entry
-            -- TODO: shorten card.text for displaying if card.title is not available
-            -- TODO:  Also: Source if applicable, and number of cards count
-            li [class "deck-in-decklist"] [ a [ href (deckLink d.slug) ] [ text d.slug ] ]
-
         deckList =
             case model.decks of
                 Ok decks ->
-                    ol [class "deck-list"] (List.map oneDeck decks)
+                    ol [ class "deck-list" ] (List.map oneDeckInDeckList decks)
 
                 Err e ->
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
     in
-        pageChrome deckList
-    
+    pageChrome deckList
 
 
 deckDetailsPage : Deck -> Html Msg

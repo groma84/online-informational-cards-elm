@@ -27,8 +27,22 @@ header .header-text {
 
 .deck-list {
   display: grid;
+  grid-template-columns: 2fr 2fr;
+  list-style: none;
+}
+
+.deck-list-card-title {
+  margin: 1rem 2rem 0 2rem;
+}
+
+.deck-list-card-subtitle {
+  margin: 0 2rem;
+}
+
+.deck-list-card-content {
+  margin: 0 1rem 1rem 2rem;
 }
 
 .deck-in-decklist {
-  
+  width: 20vw;
 }
