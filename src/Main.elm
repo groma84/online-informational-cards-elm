@@ -8,10 +8,11 @@ import Html.Attributes exposing (class, href, id, src, type_)
 import Html.Events exposing (onClick)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
 import List.Extra
+import Ports exposing (scrollToElementById)
 import Random
+import Task
 import Url
 import Url.Parser as UP exposing ((</>))
-import Task
 
 
 decodeCard : Decoder Card
@@ -138,13 +139,6 @@ urlToPage decks url =
     page
 
 
-jumpToCard : String -> Cmd Msg
-jumpToCard id =
-    Browser.Dom.getViewportOf id
-        |> Task.andThen (\info -> Browser.Dom.setViewportOf id 0 info.scene.height)
-        |> Task.attempt (\_ -> NoOp)
-
-
 buildCardId : String -> Int -> String
 buildCardId deckSlug cardIndex =
     deckSlug ++ "--" ++ String.fromInt cardIndex
@@ -178,8 +172,11 @@ update msg model =
 
         RandomCardIndex deckSlug cardIndex ->
             let
+                cardId =
+                    buildCardId deckSlug cardIndex
+
                 command =
-                    jumpToCard (buildCardId deckSlug cardIndex)
+                    scrollToElementById cardId
             in
             ( model, command )
 
@@ -289,7 +286,6 @@ homepage model =
 deckDetailsPage : Deck -> Html Msg
 deckDetailsPage deck =
     let
-        -- TODO: go to random card of deck
         oneCard : Int -> Card -> Html Msg
         oneCard index card =
             let
@@ -301,6 +297,7 @@ deckDetailsPage deck =
                     [ h4 [ class "card-title", class "deck-list-card-title" ] [ text (Maybe.withDefault "" card.title) ]
                     , div [ class "deck-list-card-content" ]
                         [ p [ class "card-text" ] [ text card.text ]
+                        , p [ class "card-text italic" ] [ text (Maybe.withDefault "" card.additionalText) ]
                         , a [ class "card-link", href (cardLink deck.slug index) ] [ text "Go to card" ]
                         ]
                     ]

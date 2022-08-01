@@ -39,6 +39,10 @@ main.with-margins {
   display: flex;
 }
 
+.italic {
+  font-style: italic;
+}
+
 .deck-list {
   display: grid;
   grid-template-columns: 2fr 2fr;
