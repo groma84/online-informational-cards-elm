@@ -8,7 +8,7 @@
     "postinstall": "elm-tooling install",
     "dev": "vite",
     "prebuild": "elm-tooling install",
-    "build": "vite build",
+    "build": "cp ../online-informational-cards-elm-cards/cards.json ./ && vite build --base=./",
     "serve": "vite preview",
     "lint": "elm-review",
     "test": "elm-test-rs",

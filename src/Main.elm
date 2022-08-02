@@ -76,6 +76,8 @@ parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
         [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
+        , UP.map DeckDetails (UP.s "oinc" </> UP.s deckPrefix </> UP.string)
+        , UP.map Home (UP.s "oinc" </> UP.top)
         , UP.map Home UP.top
         ]
 
@@ -263,7 +265,6 @@ oneDeckInDeckList d =
             , subtitle
             , div [ class "deck-list-card-content" ]
                 [ p [ class "card-text" ] [ text (cardCountText ++ " cards") ]
-                , a [ class "card-link", href (deckLink d.slug) ] [ text "Go to cards of deck" ]
                 ]
             ]
         ]
