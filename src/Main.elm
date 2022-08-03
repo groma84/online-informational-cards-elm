@@ -223,8 +223,15 @@ cardLink deckSlug index =
     deckSlug ++ "/" ++ cardPrefix ++ "/" ++ String.fromInt index
 
 
-pageChrome : Html Msg -> Html Msg
-pageChrome content =
+pageChrome : Bool -> Html Msg -> Html Msg
+pageChrome isHomePage content =
+    let
+        backToHomeLink = 
+            if isHomePage then
+                text ""
+            else
+                a [href "/", class "back-to-home-link"] [text "Go to the homepage"]
+    in
     div
         [ class "container"
         , class "container-md"
@@ -238,6 +245,7 @@ pageChrome content =
             , span [ class "header-text" ] [ text "formational" ]
             , span [ class "header-letter" ] [ text "C" ]
             , span [ class "header-text" ] [ text "ards" ]
+            , backToHomeLink
             ]
         , main_ [ class "with-margins" ]
             [ content
@@ -265,6 +273,7 @@ oneDeckInDeckList d =
             , subtitle
             , div [ class "deck-list-card-content" ]
                 [ p [ class "card-text" ] [ text (cardCountText ++ " cards") ]
+                , a [ class "card-link", href (deckLink d.slug) ] [ text "Go to cards of deck" ]
                 ]
             ]
         ]
@@ -281,7 +290,7 @@ homepage model =
                 Err e ->
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
     in
-    pageChrome deckList
+    pageChrome True deckList
 
 
 deckDetailsPage : Deck -> Html Msg
@@ -299,12 +308,11 @@ deckDetailsPage deck =
                     , div [ class "deck-list-card-content" ]
                         [ p [ class "card-text" ] [ text card.text ]
                         , p [ class "card-text italic" ] [ text (Maybe.withDefault "" card.additionalText) ]
-                        , a [ class "card-link", href (cardLink deck.slug index) ] [ text "Go to card" ]
                         ]
                     ]
                 ]
     in
-    pageChrome
+    pageChrome False
         (div []
             [ div [ class "flex", class "cards-page--title-container" ]
                 [ h3 [ class "deck-title-on-cards-page" ] [ text deck.name ]
@@ -315,14 +323,23 @@ deckDetailsPage deck =
         )
 
 
+notFoundPage : Html Msg
+notFoundPage =
+    pageChrome False
+        (div []
+            [ h2 [] [ text "Sorry, the requested page could no found!" ]
+            , a [ href "/" ] [ text "Back to the homepage" ]
+            ]
+        )
+
+
 view : Model -> Browser.Document Msg
 view model =
     { title = pageTitle model.page
     , body =
         [ case model.page of
             NotFoundPage ->
-                -- TODO: Add Link to homepage and some styling/image
-                text "page not found"
+                notFoundPage
 
             Homepage ->
                 homepage model

@@ -30,6 +30,13 @@ header .header-text {
   margin-right: 1.0rem;
 }
 
+.back-to-home-link {
+  font-size: 1rem;
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+
 main.with-margins {
   margin-left: 2rem;
   margin-right: 2rem;

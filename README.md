@@ -1,8 +1,5 @@
 # Online Informational Cards
 ## TODO
-- Fix Url Parser not working in subfolder "oinc" on the server...
-- Add links back to homepage on all pages
-- Add Impressum somewhere
-- Add Responsive design
-- Improve NotFoundPage
+- Add Impressum somewhere, maybe as a link in the footer 
 - Persist random scrolled cardId in Url for "deep-linking"
+- Add Responsive design
