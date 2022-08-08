@@ -248,6 +248,7 @@ pageChrome isHomePage content =
                 text ""
 
             else
+        -- TODO: Link loses oinc on prod
                 a [ href "/", class "back-to-home-link" ] [ text "Go to the homepage" ]
     in
     div
@@ -269,7 +270,8 @@ pageChrome isHomePage content =
             [ content
             ]
         , footer []
-            [ a [ href "impressum" ] [ text "Impressum" ]
+        -- TODO: Link loses oinc on prod
+            [ a [ href "/impressum" ] [ text "Impressum" ]
             ]
         ]
 
@@ -349,7 +351,7 @@ deckDetailsPage deck =
         (div []
             [ div [ class "flex", class "cards-page--title-container" ]
                 [ h3 [ class "deck-title-on-cards-page" ] [ text deck.name ]
-                , button [ type_ "button", onClick (ScrollToRandomCard deck.slug (List.length deck.cards)) ] [ text "Scroll to random card" ]
+                , button [ class "button-jump-to-random-card", type_ "button", onClick (ScrollToRandomCard deck.slug (List.length deck.cards)) ] [ text "Scroll to random card" ]
                 ]
             , ol [ class "deck-list" ] (List.indexedMap oneCard deck.cards)
             ]

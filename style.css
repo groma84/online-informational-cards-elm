@@ -5,6 +5,10 @@
   --color-okay: #5a7c6c;
 }
 
+body {
+  font-size: 20px;
+}
+
 ol {
   margin: 0;
   padding: 0;
@@ -82,4 +86,68 @@ main.with-margins {
 
 .deck-title-on-cards-page {
   display: inline;
+}
+
+@media screen and (min-width: 5rem) {
+  body {
+    font-size: 16px;
+  }
+
+  header {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    justify-content: flex-start;
+  }
+
+  header .header-icon {
+    margin-right: 0.25rem;
+  }
+
+  header .header-text {
+    margin-right: 0.25rem;
+  }
+
+  .back-to-home-link {
+    font-size: 0.75rem;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+  }
+
+  main.with-margins {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+  }
+
+  .deck-list {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+  }
+
+  .deck-list-card-title {
+    margin: 0.25rem 0.5rem 0 0.5rem;
+  }
+
+  .deck-list-card-subtitle {
+    margin: 0 0.5rem;
+  }
+
+  .deck-list-card-content {
+    margin: 0 0.25rem 0.25rem 0.5rem;
+  }
+  
+  .cards-page--title-container {
+    margin-bottom: 1rem;
+    justify-content: space-between;
+  }
+
+  .deck-title-on-cards-page {
+    font-size: 1rem;
+  }
+
+  .button-jump-to-random-card {
+    font-size: 0.75rem;
+    margin-bottom: 0;
+  }
 }
