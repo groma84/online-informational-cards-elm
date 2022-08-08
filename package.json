@@ -6,9 +6,9 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "elm-tooling install",
-    "dev": "vite",
+    "dev": "cp config.dev.json config.json && vite",
     "prebuild": "elm-tooling install",
-    "build": "cp ../online-informational-cards-elm-cards/cards.json ./ && vite build --base=./",
+    "build": "cp ../online-informational-cards-elm-cards/cards.json ./ && cp config.prod.json config.json && vite build --base=./",
     "serve": "vite preview",
     "lint": "elm-review",
     "test": "elm-test-rs",

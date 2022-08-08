@@ -1,10 +1,16 @@
 import "./paper.min.css";
 import "./style.css";
-import cards from "./cards.json";
+import config from "/config.json";
+import decks from "./cards.json";
 import { Elm } from "./src/Main.elm";
 
 const root = document.querySelector("#app div");
-const app = Elm.Main.init({ node: root, flags: cards});
+const app = Elm.Main.init(
+    { node: root, flags: {
+        decks,
+        baseUrl: config.baseUrl
+    }
+    });
 
 app.ports.scrollToElementById.subscribe((elementId) => {
     document.querySelector(`#${elementId}`)?.scrollIntoView({behavior: "smooth"});

@@ -6,7 +6,7 @@ import Browser.Navigation as Nav
 import Html exposing (Html, a, button, div, footer, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
 import Html.Attributes exposing (class, href, id, src, type_)
 import Html.Events exposing (onClick)
-import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
+import Json.Decode exposing (Decoder, decodeValue, field, list, map2, map3, map4, maybe, string)
 import List.Extra
 import Ports exposing (scrollToElementById)
 import Random
@@ -34,9 +34,20 @@ decodeDeck =
         (maybe (field "source" string))
         (field "cards" (list decodeCard))
 
+decodeFlags : Decoder Flags 
+decodeFlags =
+    map2
+        Flags
+            (field "decks" (list decodeDeck))
+            (field "baseUrl" string)
 
 
 ---- MODEL ----
+type alias Flags = 
+    {
+    decks : List Deck
+    , baseUrl : String
+    }
 
 
 type Route
@@ -69,20 +80,21 @@ type alias Deck =
 
 
 type alias Model =
-    { decks : Result Json.Decode.Error (List Deck)
+    { decks : List Deck
     , key : Nav.Key
     , page : Page
+    , baseUrl : String
     }
 
 
-parser : UP.Parser (Route -> a) a
-parser =
+parser : String -> UP.Parser (Route -> a) a
+parser baseUrl =
     UP.oneOf
         [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
-        , UP.map DeckDetails (UP.s "oinc" </> UP.s deckPrefix </> UP.string)
-        , UP.map Impressum (UP.s "oinc" </> UP.s "impressum")
+        , UP.map DeckDetails (UP.s baseUrl </> UP.s deckPrefix </> UP.string)
+        , UP.map Impressum (UP.s baseUrl </> UP.s "impressum")
         , UP.map Impressum (UP.s "impressum")
-        , UP.map Home (UP.s "oinc" </> UP.top)
+        , UP.map Home (UP.s baseUrl </> UP.top)
         , UP.map Home UP.top
         ]
 
@@ -90,10 +102,14 @@ parser =
 init : Json.Decode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     let
-        decks =
-            decodeValue (list decodeDeck) flags
+        decodedFlags = decodeValue decodeFlags flags
+
+        (decks, baseUrl) =
+            case decodedFlags of
+                Ok df -> (df.decks, df.baseUrl) 
+                Err _ -> ([], "")
     in
-    ( { decks = decks, page = urlToPage decks url, key = key }, Cmd.none )
+    ( { decks = decks, page = urlToPage decks baseUrl url, key = key, baseUrl = baseUrl }, Cmd.none )
 
 
 
@@ -108,21 +124,16 @@ type Msg
     | RandomCardIndex String Int
 
 
-urlToPage : Result Json.Decode.Error (List Deck) -> Url.Url -> Page
-urlToPage decks url =
+urlToPage : List Deck -> String -> Url.Url -> Page
+urlToPage decks baseUrl url =
     let
         findDeck : String -> Maybe Deck
         findDeck slug =
-            case decks of
-                Err _ ->
-                    Nothing
-
-                Ok deckList ->
-                    List.Extra.find (\d -> d.slug == slug) deckList
+                List.Extra.find (\d -> d.slug == slug) decks
 
         parsedRoute : Route
         parsedRoute =
-            Maybe.withDefault NotFound (UP.parse parser url)
+            Maybe.withDefault NotFound (UP.parse (parser baseUrl) url)
 
         page =
             case parsedRoute of
@@ -133,15 +144,9 @@ urlToPage decks url =
                     HomePage
 
                 DeckDetails slug ->
-                    Result.withDefault NotFoundPage
-                        (Result.map
-                            (\ds ->
                                 findDeck slug
                                     |> Maybe.map DeckDetailsPage
                                     |> Maybe.withDefault NotFoundPage
-                            )
-                            decks
-                        )
 
                 Impressum ->
                     ImpressumPage
@@ -169,7 +174,7 @@ update msg model =
                     ( model, Nav.load href )
 
         OnUrlChange url ->
-            ( { model | page = urlToPage model.decks url }
+            ( { model | page = urlToPage model.decks model.baseUrl url }
             , Cmd.none
             )
 
@@ -240,16 +245,22 @@ cardLink deckSlug index =
     deckSlug ++ "/" ++ cardPrefix ++ "/" ++ String.fromInt index
 
 
-pageChrome : Bool -> Html Msg -> Html Msg
-pageChrome isHomePage content =
+pageChrome : Bool -> String -> Html Msg -> Html Msg
+pageChrome isHomePage baseUrl content =
     let
+        homeUrl = Url.Builder.absolute [baseUrl] []
+        impressumUrl = 
+                case baseUrl of
+                    "" -> Url.Builder.absolute ["impressum"] []
+                    _ -> Url.Builder.absolute [baseUrl, "impressum"] []
+
         backToHomeLink =
             if isHomePage then
                 text ""
 
             else
         -- TODO: Link loses oinc on prod
-                a [ href "/", class "back-to-home-link" ] [ text "Go to the homepage" ]
+                a [ href homeUrl, class "back-to-home-link" ] [ text "Go to the homepage" ]
     in
     div
         [ class "container"
@@ -271,7 +282,7 @@ pageChrome isHomePage content =
             ]
         , footer []
         -- TODO: Link loses oinc on prod
-            [ a [ href "/impressum" ] [ text "Impressum" ]
+            [ a [ href impressumUrl ] [ text "Impressum" ]
             ]
         ]
 
@@ -306,19 +317,14 @@ homepage : Model -> Html Msg
 homepage model =
     let
         deckList =
-            case model.decks of
-                Ok decks ->
-                    ol [ class "deck-list" ] (List.map oneDeckInDeckList decks)
-
-                Err e ->
-                    text <| "ERROR!: " ++ Json.Decode.errorToString e
+                    ol [ class "deck-list" ] (List.map oneDeckInDeckList model.decks)
     in
-    pageChrome True deckList
+    pageChrome True model.baseUrl deckList
 
 
-impressum : Html Msg
-impressum =
-    pageChrome False
+impressum : String -> Html Msg
+impressum baseUrl =
+    pageChrome False baseUrl
         (div []
             [ h1 [] [ text "Impressum" ]
             , p [] [ text "Angaben gemäß § 5 TMG" ]
@@ -328,8 +334,8 @@ impressum =
         )
 
 
-deckDetailsPage : Deck -> Html Msg
-deckDetailsPage deck =
+deckDetailsPage : String -> Deck -> Html Msg
+deckDetailsPage baseUrl deck =
     let
         oneCard : Int -> Card -> Html Msg
         oneCard index card =
@@ -347,7 +353,7 @@ deckDetailsPage deck =
                     ]
                 ]
     in
-    pageChrome False
+    pageChrome False baseUrl
         (div []
             [ div [ class "flex", class "cards-page--title-container" ]
                 [ h3 [ class "deck-title-on-cards-page" ] [ text deck.name ]
@@ -358,9 +364,9 @@ deckDetailsPage deck =
         )
 
 
-notFoundPage : Html Msg
-notFoundPage =
-    pageChrome False
+notFoundPage : String -> Html Msg
+notFoundPage baseUrl =
+    pageChrome False baseUrl
         (div []
             [ h2 [] [ text "Sorry, the requested page could no found!" ]
             , a [ href "/" ] [ text "Back to the homepage" ]
@@ -374,16 +380,16 @@ view model =
     , body =
         [ case model.page of
             NotFoundPage ->
-                notFoundPage
+                notFoundPage model.baseUrl
 
             HomePage ->
                 homepage model
 
             DeckDetailsPage deck ->
-                deckDetailsPage deck
+                deckDetailsPage model.baseUrl deck
 
             ImpressumPage ->
-                impressum
+                impressum model.baseUrl
         ]
     }
 
