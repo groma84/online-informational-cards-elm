@@ -13,6 +13,7 @@ import Random
 import Task
 import Url
 import Url.Parser as UP exposing ((</>))
+import Url.Builder
 
 
 decodeCard : Decoder Card
@@ -184,10 +185,16 @@ update msg model =
                 cardId =
                     buildCardId deckSlug cardIndex
 
-                command =
+                scrollCommand =
                     scrollToElementById cardId
+
+                updateUrlCommand =
+                    let
+                        url = Url.Builder.relative [] [Url.Builder.string "cardId" cardId]
+                    in
+                    Nav.pushUrl model.key url
             in
-            ( model, command )
+            ( model, Cmd.batch [scrollCommand, updateUrlCommand] )
 
 
 
