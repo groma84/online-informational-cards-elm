@@ -12,9 +12,7 @@ import Ports exposing (scrollToElementById)
 import Random
 import Task
 import Url
-import Url.Parser as UP exposing ((</>), (<?>))
-import Url.Builder
-import Url.Parser.Query
+import Url.Parser as UP exposing ((</>))
 
 
 decodeCard : Decoder Card
@@ -35,7 +33,6 @@ decodeDeck =
         (maybe (field "source" string))
         (field "cards" (list decodeCard))
 
-type alias CardIdFromUrl = Maybe String
 
 
 ---- MODEL ----
@@ -44,14 +41,14 @@ type alias CardIdFromUrl = Maybe String
 type Route
     = NotFound
     | Home
-    | DeckDetails String CardIdFromUrl
+    | DeckDetails String
     | Impressum
 
 
 type Page
     = NotFoundPage
     | HomePage
-    | DeckDetailsPage CardIdFromUrl Deck
+    | DeckDetailsPage Deck
     | ImpressumPage
 
 
@@ -80,8 +77,8 @@ type alias Model =
 parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
-        [ UP.map DeckDetails (UP.s deckPrefix </> UP.string <?> Url.Parser.Query.string "cardId")
-        , UP.map DeckDetails (UP.s "oinc" </> UP.s deckPrefix </> UP.string <?> Url.Parser.Query.string "cardId")
+        [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
+        , UP.map DeckDetails (UP.s "oinc" </> UP.s deckPrefix </> UP.string)
         , UP.map Impressum (UP.s "oinc" </> UP.s "impressum")
         , UP.map Impressum (UP.s "impressum")
         , UP.map Home (UP.s "oinc" </> UP.top)
@@ -134,12 +131,12 @@ urlToPage decks url =
                 Home ->
                     HomePage
 
-                DeckDetails slug cardId ->
+                DeckDetails slug ->
                     Result.withDefault NotFoundPage
                         (Result.map
                             (\ds ->
                                 findDeck slug
-                                    |> Maybe.map (DeckDetailsPage cardId)
+                                    |> Maybe.map DeckDetailsPage
                                     |> Maybe.withDefault NotFoundPage
                             )
                             decks
@@ -171,26 +168,14 @@ update msg model =
                     ( model, Nav.load href )
 
         OnUrlChange url ->
-            let
-                page = urlToPage model.decks url
-
-                scrollCommand = case page of    
-                    DeckDetailsPage cardIdFromUrl slug  -> 
-                        case cardIdFromUrl of
-                        Just cId -> scrollToElementById cId
-                        Nothing -> Cmd.none
-                    _ -> Cmd.none
-                        
-            in
-            
-            ( { model | page = page }
-            , scrollCommand
+            ( { model | page = urlToPage model.decks url }
+            , Cmd.none
             )
 
         ScrollToRandomCard deckSlug cardAmount ->
             let
                 command =
-                    Random.generate (RandomCardIndex deckSlug) <| Random.int 0 (cardAmount - 1)
+                    Random.generate (RandomCardIndex deckSlug) <| Random.int 0 cardAmount
             in
             ( model, command )
 
@@ -199,16 +184,10 @@ update msg model =
                 cardId =
                     buildCardId deckSlug cardIndex
 
-                scrollCommand =
+                command =
                     scrollToElementById cardId
-
-                updateUrlCommand =
-                    let
-                        url = Url.Builder.relative [] [Url.Builder.string "cardId" cardId]
-                    in
-                    Nav.pushUrl model.key url
             in
-            ( model, Cmd.batch [scrollCommand, updateUrlCommand] )
+            ( model, command )
 
 
 
@@ -226,7 +205,7 @@ pageTitle page =
                 HomePage ->
                     "Homepage"
 
-                DeckDetailsPage _ deck ->
+                DeckDetailsPage deck ->
                     deck.name
 
                 ImpressumPage ->
@@ -340,8 +319,8 @@ impressum =
         )
 
 
-deckDetailsPage : CardIdFromUrl -> Deck -> Html Msg
-deckDetailsPage cardIdFromUrl deck =
+deckDetailsPage : Deck -> Html Msg
+deckDetailsPage deck =
     let
         oneCard : Int -> Card -> Html Msg
         oneCard index card =
@@ -391,8 +370,8 @@ view model =
             HomePage ->
                 homepage model
 
-            DeckDetailsPage cardId deck ->
-                deckDetailsPage cardId deck
+            DeckDetailsPage deck ->
+                deckDetailsPage deck
 
             ImpressumPage ->
                 impressum
