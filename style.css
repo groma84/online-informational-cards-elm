@@ -30,6 +30,12 @@ header .header-text {
   margin-right: 1.0rem;
 }
 
+footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
 .back-to-home-link {
   font-size: 1rem;
   position: absolute;

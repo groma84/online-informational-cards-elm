@@ -3,7 +3,7 @@ module Main exposing (..)
 import Browser exposing (UrlRequest)
 import Browser.Dom
 import Browser.Navigation as Nav
-import Html exposing (Html, a, button, div, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
+import Html exposing (Html, a, button, div, footer, h1, h2, h3, h4, h5, h6, header, img, li, main_, ol, p, span, text)
 import Html.Attributes exposing (class, href, id, src, type_)
 import Html.Events exposing (onClick)
 import Json.Decode exposing (Decoder, decodeValue, field, list, map3, map4, maybe, string)
@@ -42,12 +42,14 @@ type Route
     = NotFound
     | Home
     | DeckDetails String
+    | Impressum
 
 
 type Page
     = NotFoundPage
-    | Homepage
+    | HomePage
     | DeckDetailsPage Deck
+    | ImpressumPage
 
 
 type alias Card =
@@ -77,6 +79,8 @@ parser =
     UP.oneOf
         [ UP.map DeckDetails (UP.s deckPrefix </> UP.string)
         , UP.map DeckDetails (UP.s "oinc" </> UP.s deckPrefix </> UP.string)
+        , UP.map Impressum (UP.s "oinc" </> UP.s "impressum")
+        , UP.map Impressum (UP.s "impressum")
         , UP.map Home (UP.s "oinc" </> UP.top)
         , UP.map Home UP.top
         ]
@@ -125,7 +129,7 @@ urlToPage decks url =
                     NotFoundPage
 
                 Home ->
-                    Homepage
+                    HomePage
 
                 DeckDetails slug ->
                     Result.withDefault NotFoundPage
@@ -137,6 +141,9 @@ urlToPage decks url =
                             )
                             decks
                         )
+
+                Impressum ->
+                    ImpressumPage
     in
     page
 
@@ -195,11 +202,14 @@ pageTitle page =
                 NotFoundPage ->
                     "404 - Not Found"
 
-                Homepage ->
+                HomePage ->
                     "Homepage"
 
                 DeckDetailsPage deck ->
                     deck.name
+
+                ImpressumPage ->
+                    "Impressum"
     in
     title ++ " @ OInC"
 
@@ -226,11 +236,12 @@ cardLink deckSlug index =
 pageChrome : Bool -> Html Msg -> Html Msg
 pageChrome isHomePage content =
     let
-        backToHomeLink = 
+        backToHomeLink =
             if isHomePage then
                 text ""
+
             else
-                a [href "/", class "back-to-home-link"] [text "Go to the homepage"]
+                a [ href "/", class "back-to-home-link" ] [ text "Go to the homepage" ]
     in
     div
         [ class "container"
@@ -249,6 +260,9 @@ pageChrome isHomePage content =
             ]
         , main_ [ class "with-margins" ]
             [ content
+            ]
+        , footer []
+            [ a [ href "impressum" ] [ text "Impressum" ]
             ]
         ]
 
@@ -291,6 +305,18 @@ homepage model =
                     text <| "ERROR!: " ++ Json.Decode.errorToString e
     in
     pageChrome True deckList
+
+
+impressum : Html Msg
+impressum =
+    pageChrome False
+        (div []
+            [ h1 [] [ text "Impressum" ]
+            , p [] [ text "Angaben gemäß § 5 TMG" ]
+            , p [] [ text "Verantwortlich: Martin Grotz, Erlanger Str. 60A, 91096 Möhrendorf" ]
+            , p [] [ text "Kontakt - E-Mail: martin.grotz@gmx.de" ]
+            ]
+        )
 
 
 deckDetailsPage : Deck -> Html Msg
@@ -341,11 +367,14 @@ view model =
             NotFoundPage ->
                 notFoundPage
 
-            Homepage ->
+            HomePage ->
                 homepage model
 
             DeckDetailsPage deck ->
                 deckDetailsPage deck
+
+            ImpressumPage ->
+                impressum
         ]
     }
 
